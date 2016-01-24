@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <iostream>
+#include "ProfileList.h"
 
 using namespace std;
 
@@ -11,7 +12,11 @@ using namespace std;
 #define drawOneLine(x1,y1,x2,y2)  glBegin(GL_LINES);  \
    glVertex2f ((x1),(y1)); glVertex2f ((x2),(y2)); glEnd();
 static double year = 0, day = 0;
+static ProfileList profileList;
+static GLdouble translateY = 0;
+static int profileNumber = 0;
 
+GLdouble* createNewProfile(GLdouble translateY);
 
 void init(void)
 {
@@ -30,141 +35,40 @@ void drawCircle() {
 	glEnd();
 }
 
-void display_Circle(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(0.0, 0.0, 0.0);
-	drawCircle();
-	glPushMatrix();
-	glRotatef(day, 1, 0, 0);
-	drawCircle();
-	glPopMatrix();
-	glutSwapBuffers();
-}
+void generateSurface(GLdouble* circle1, GLdouble* circle2) {
 
-void display_square(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(1.0, 1.0, 1.0);
-	
-	glPushMatrix();
+	glColor3f(1.0, 0.0, 0.0);
+	for (int k = 0; k < 150; k += 3)
+	{
+		glVertex3d(circle1[k], circle1[k + 1], circle1[k + 2]);
+		glVertex3d(circle2[k], circle2[k + 1], circle2[k + 2]);
+	}
+	glVertex3d(circle1[0], circle1[1], circle1[2]);
+	glVertex3d(circle2[0], circle2[1], circle2[2]);
 
-	glRotated(day, 1.0, 0.0, 0.0);
-	glRotated(year, 0.0, 1.0, 0.0);
-
-	GLdouble v1[3] = { 1.0, 2.0, 0.0 };
-	GLdouble v2[3] = { 0.0, 2.0, -1.0 };
-	GLdouble v3[3] = { -1.0, 2.0, 0.0 };
-	GLdouble v4[3] = { 0.0, 2.0, 1.0 };
-	glBegin(GL_LINE_LOOP);
-		glVertex3dv(v1);
-		glVertex3dv(v2);
-		glVertex3dv(v3);
-		glVertex3dv(v4);
-	glEnd();
-
-	GLdouble v5[3] = { 1.0, -2.0, 0.0 };
-	GLdouble v6[3] = { 0.0, -2.0, -1.0 };
-	GLdouble v7[3] = { -1.0, -2.0, 0.0 };
-	GLdouble v8[3] = { 0.0, -2.0, 1.0 };
-
-
-	glBegin(GL_LINE_LOOP);
-		glVertex3dv(v5);
-		glVertex3dv(v6);
-		glVertex3dv(v7);
-		glVertex3dv(v8);
-	glEnd();
-
-	glBegin(GL_TRIANGLE_STRIP);
-		glVertex3dv(v1);
-		glVertex3dv(v5);
-		glColor3f(0.0, 1.0, 1.0);
-		glVertex3dv(v4);
-		glColor3f(0.0, 1.0, 1.0);
-		
-		glVertex3dv(v8);
-
-		glColor3f(1.0, 1.0, 0.0);
-		glVertex3dv(v3);
-		
-		glColor3f(1.0, 0.0, 1.0);
-		glVertex3dv(v7);
-		glColor3f(0.5, 1.0, 1.0);
-		glVertex3dv(v2);
-		glColor3f(0.0, 0.0, 1.5);
-		glVertex3dv(v6);
-		glColor3f(0.0, 0.5, 1.5);
-		glVertex3dv(v1);
-		glColor3f(0.5, 0.5, 1.5);
-		glVertex3dv(v5);
-		
-	glEnd();
-
-	glPopMatrix();
-
-	glutSwapBuffers();
 }
 
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(1.0, 1.0, 1.0);
-	glPushMatrix();
+
 
 	glRotated(day, 1.0, 0.0, 0.0);
 	glRotated(year, 0.0, 1.0, 0.0);
 
-	GLdouble* circle1 = new GLdouble[150];
-	GLdouble* circle2 = new GLdouble[150];
-
-	GLint circle_points = 50, i = 0;
-	for (int i = 0, k = 0; i < circle_points && k < 150; i++, k += 3)
-	{
-		double angle = 2 * PI*i / circle_points;
-		circle1[k] = 2 * cos(angle);
-		circle1[k + 1] = 2;
-		circle1[k + 2] = 2 * sin(angle);;
-
-		circle2[k] = 2 * cos(angle);
-		circle2[k + 1] = -2;
-		circle2[k + 2] = 2 * sin(angle);;
-	}
-
-	glBegin(GL_LINE_LOOP);
-	for (int k = 0; k < 150; k += 3)
-	{
-		glVertex3d(circle1[k], circle1[k + 1], circle1[k + 2]);
-	}
-	glEnd();
-
-	/*
-	glBegin(GL_LINE_LOOP);
-	for (int k = 0; k < 150; k += 3)
-	{
-		glVertex3d(circle2[k], circle2[k + 1], circle2[k + 2]);
-	}
-	glEnd();
-	*/
-	/*
-	glBegin(GL_LINE_STRIP);
-		glVertex3d(circle1[0], circle1[1], circle1[2]);
-		glVertex3d(circle2[0], circle2[1], circle2[2]);
-		glVertex3d(circle1[27], circle1[28], circle1[29]);
-	glEnd();
-	*/
+	glPushMatrix();
 	
-	/*
-	glBegin(GL_LINE_STRIP);
-	for (int k = 0; k < 150; k+=3)
-	{	
-		glVertex3d(circle1[k], circle1[k + 1], circle1[k + 2]);
-		glVertex3d(circle2[k], circle2[k + 1], circle2[k + 2]);
+	glBegin(GL_TRIANGLE_STRIP);
+	Node* p = profileList.GetHead();
+	while (p != NULL && p->next != NULL)
+	{
+		GLdouble* circle1 = p->vertexArray;
+		GLdouble* circle2 = p->next->vertexArray;
+		generateSurface(circle1, circle2);
+		p = p->next;
 	}
-	glVertex3d(circle1[0], circle1[1], circle1[2]);
-	glVertex3d(circle2[0], circle2[1], circle2[2]);
 	glEnd();
-	*/
 
 	glPopMatrix();
 
@@ -211,10 +115,28 @@ void keyboard(unsigned char key, int x, int y)
 		cout << year << endl;
 		glutPostRedisplay();
 		break;
+	case 'q': 
+	{
+		translateY = translateY + 0.5;
+		GLdouble* newProfile = createNewProfile(translateY);
+		if (profileList.GetHead() == NULL)
+		{
+			cout << "no head , create one " << endl;
+			Node* p = new Node(newProfile);
+			profileList.SetHead(p);
+		}
+		else
+		{
+			profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
+		}
+		cout << translateY << endl;
+		cout << profileList.GetNodeNumber() << endl;
+		glutPostRedisplay();
+		break;
+	}
+		
 	case 27:
 		exit(0);
-		break;
-	default:
 		break;
 	}
 }
@@ -223,7 +145,7 @@ int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(800, 800);
+	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(300, 100);
 	glutCreateWindow(argv[0]);
 	init();
@@ -232,4 +154,17 @@ int main(int argc, char** argv)
 	glutKeyboardFunc(keyboard);
 	glutMainLoop();
 	return 0;
+}
+
+GLdouble* createNewProfile(GLdouble translateY) {
+	GLdouble* profile = new GLdouble[150];
+	GLint circle_points = 50, i = 0;
+	for (int i = 0, k = 0; i < circle_points && k < 150; i++, k += 3)
+	{
+		double angle = 2 * PI*i / circle_points;
+		profile[k] = 2 * cos(angle);
+		profile[k + 1] = translateY;
+		profile[k + 2] = 2 * sin(angle);;
+	}
+	return profile;
 }
