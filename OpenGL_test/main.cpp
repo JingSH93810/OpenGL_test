@@ -32,6 +32,7 @@ struct circle
 	double y;
 	/*圆半径*/
 	double radius;
+	double angle;
 	GLubyte color[3];
 };
 circle circle1;
@@ -55,6 +56,11 @@ int day = 0;
 double calculateRadius(int x1, int y1, int x2, int y2) {
 	double radius = (sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2)) / 2.0);
 	return radius;
+}
+
+double calculateAngle(int x1, int y1, int x2, int y2) {
+	double angle = atan2(y2 - y1, x2 - x1) * 180.0 / PI;
+	return angle;
 }
 
 //画弧线，相对偏移量XY，开始的弧度，结束的弧度，半径
@@ -179,11 +185,15 @@ void display(void)
 	//if(drawStatus == 1) glPolygons();
 	if (drawStatus == 1) {
 		glPushMatrix();
-		glRotated(day, 1, 0, 0);
+
 		glColorCircle(radius_X[0], radius_Y[0], 5, red);
 		glColorCircle(radius_X[1], radius_Y[1], 5, red);
+		glLine(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
+		glTranslated(circle1.x, circle1.y, 0.0);
+		glRotated(circle1.angle, 0, 0, 1);
+		glRotated(day, 1, 0, 0);
 		glColor3b(0,0,0);
-		glCircle(circle1.x, circle1.y, circle1.radius);
+		glCircle(0, 0, circle1.radius);
 		glPopMatrix();
 	}
 	glFlush();
@@ -263,8 +273,9 @@ void mouseClick(int btn, int state, int x, int y)
 				/* 如果点击了结束绘制的按钮 */
 			}
 			else if (sameColor(color, endBtn)) {
-				drawStatus = 1;
+				if(circle_count == 2) drawStatus = 1;
 				circle_count = 0;
+				day = 0;
 				printf("x1:%d, y1:%d, x2:%d, y2:%d\n", radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
 
 				circle1.x = (radius_X[1] + radius_X[0]) / 2.0;
@@ -272,10 +283,10 @@ void mouseClick(int btn, int state, int x, int y)
 				circle1.y = (radius_Y[1] + radius_Y[0]) / 2.0;
 				printf("origin y:%f\n", circle1.y);
 				circle1.radius = calculateRadius(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
-
-
-
 				printf("radius:%f\n", circle1.radius);
+				circle1.angle = calculateAngle(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
+				printf("angle a:%f\n", circle1.angle);
+
 				/* 画的图形个数加一 */
 				con++;
 				printf("drawStatus:%d\n", drawStatus);
