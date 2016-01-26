@@ -4,33 +4,34 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <iostream>
+#include "Profile.h"
 using namespace std;
 
 struct Node
 {
-	GLdouble* vertexArray;
+	Profile* profile;
 	Node* next;
 	Node() {
-		vertexArray = NULL;
+		profile = NULL;
 		next = NULL;
 	}
-	Node(GLdouble* item, Node *ptr = NULL)
+	Node(Profile* item, Node *ptr = NULL)
 		//函数参数表中的形参允许有默认值，但是带默认值的参数需要放后面
 	{
 		next = ptr;
-		vertexArray = item;
+		profile = item;
 	}
 };
 class ProfileList
 {
 public:
 	ProfileList() { head = NULL; nodeCount = 0; };
-	ProfileList(GLdouble* item) { head = new Node(item); nodeCount = 1; };
+	ProfileList(Profile* item) { head = new Node(item); nodeCount = 1; };
 	Node* GetHead() const;
 	void SetHead(Node* p);
 	Node* Locate(int pos);
-	bool Insert(GLdouble* item, int pos);
-	GLdouble* GetData(int pos);
+	bool Insert(Profile* item, int pos);
+	Profile* GetData(int pos);
 	int GetNodeNumber();
 
 	~ProfileList();

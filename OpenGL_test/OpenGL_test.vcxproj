@@ -147,9 +147,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Profile.cpp" />
     <ClCompile Include="ProfileList.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Profile.h" />
     <ClInclude Include="ProfileList.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

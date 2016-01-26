@@ -1,7 +1,10 @@
+#include <string.h>
+#include <math.h>
+#include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <math.h> 
-#include <stdio.h>
 #include <iostream>
+#include "ProfileList.h"
+#include "Profile.h"
 using namespace std;
 
 #define PI 3.1415926
@@ -25,6 +28,10 @@ struct polygon {
 int radius_X[2];
 int radius_Y[2];
 int circle_count = 0;
+
+int minorX = 0;
+int minorY = 0;
+double angle = 0;
 struct circle
 {
 	/*圆心坐标*/
@@ -36,6 +43,8 @@ struct circle
 	GLubyte color[3];
 };
 circle circle1;
+
+
 /* 各种颜色 */
 GLubyte border[3] = { 0, 0, 0 };
 GLubyte grey[3] = { 195, 195, 195 };
@@ -52,10 +61,29 @@ polygon polygons[MAX_PLOY];
 /* 记录画了几个多边形 */
 int con = 0;
 int day = 0;
+int year = 0;
+
+
+static ProfileList profileList;
+static GLdouble translateY = 0;
+static int profileNumber = 0;
 
 double calculateRadius(int x1, int y1, int x2, int y2) {
 	double radius = (sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2)) / 2.0);
 	return radius;
+}
+
+double calculateDistance(int x1, int y1, int x2, int y2) {
+	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+}
+
+double calculateDistance(int x1, int y1, int x2, int y2, int x0, int y0) {
+	double A = y2 - y1;
+	double B = x1 - x2;
+	double C = x2*y1 - x1*y2;
+	double numerator = abs((y2 - y1)*x0 + (x1 - x2)*y0 + C);
+	double denominator = sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+	return numerator / denominator;
 }
 
 double calculateAngle(int x1, int y1, int x2, int y2) {
@@ -160,13 +188,24 @@ void glPoints(int x, int y) {
 	glFlush();
 }
 
+void generateSurface(GLdouble* circle1, GLdouble* circle2) {
+
+	glColor3f(0.0, 0.0, 0.0);
+	for (int k = 0; k < 150; k += 3)
+	{
+		glVertex3d(circle1[k], circle1[k + 1], circle1[k + 2]);
+		glVertex3d(circle2[k], circle2[k + 1], circle2[k + 2]);
+	}
+	glVertex3d(circle1[0], circle1[1], circle1[2]);
+	glVertex3d(circle2[0], circle2[1], circle2[2]);
+
+}
 //函数用来画图
 void display(void)
 {
 	//GL_COLOR_BUFFER_BIT表示清除颜色
 	glClear(GL_COLOR_BUFFER_BIT);
 	//设置画线颜色
-	glColor3f(0.5, 0.5, 0.5);
 
 	/* 绘制取色盘 */
 	glColorCircle(-280, 280, 10, red);
@@ -183,6 +222,7 @@ void display(void)
 	//保证前面的OpenGL命令立即执行，而不是让它们在缓冲区中等待 
 	/* 绘制多边形 */
 	//if(drawStatus == 1) glPolygons();
+
 	if (drawStatus == 1) {
 		glPushMatrix();
 
@@ -191,11 +231,21 @@ void display(void)
 		glLine(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
 		glTranslated(circle1.x, circle1.y, 0.0);
 		glRotated(circle1.angle, 0, 0, 1);
-		glRotated(day, 1, 0, 0);
-		glColor3b(0,0,0);
+		glRotated(angle, 1, 0, 0);
+		glColor3b(0, 0, 0);
 		glCircle(0, 0, circle1.radius);
+		Node* p = profileList.GetHead();
+		while (p != NULL && p->next != NULL)
+		{
+			p->profile->draw();
+			p->profile->triangularize(p->next->profile);
+			p = p->next;
+		}
 		glPopMatrix();
+
 	}
+
+
 	glFlush();
 }
 
@@ -226,6 +276,7 @@ void ChangeSize(GLsizei w, GLsizei h)
 		//如果宽度大于高度，则将宽度视角扩大，图形显示居中
 		glOrtho(-half*w / h, half*w / h, -half, half, -half, half);
 	}
+	glMatrixMode(GL_MODELVIEW);
 
 }
 /* 判断两个颜色是否相等 */
@@ -273,7 +324,7 @@ void mouseClick(int btn, int state, int x, int y)
 				/* 如果点击了结束绘制的按钮 */
 			}
 			else if (sameColor(color, endBtn)) {
-				if(circle_count == 2) drawStatus = 1;
+				if (circle_count == 2) drawStatus = 1;
 				circle_count = 0;
 				day = 0;
 				printf("x1:%d, y1:%d, x2:%d, y2:%d\n", radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
@@ -297,6 +348,8 @@ void mouseClick(int btn, int state, int x, int y)
 			/* 如果当前是正在取点状态 */
 			if (drawStatus == 0)
 			{
+				translateY = 0;
+				profileList.~ProfileList();
 				if (circle_count == 2) {
 					circle_count = 0;
 				}
@@ -311,6 +364,13 @@ void mouseClick(int btn, int state, int x, int y)
 			}
 		}
 	}
+	if (btn == GLUT_RIGHT_BUTTON && state == GLUT_DOWN && drawStatus == 1) {
+		int click_X = x - halfWidth;
+		int click_Y = halfHeight - y;
+		double minorAxis = calculateDistance(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1], click_X, click_Y);
+		angle = acos(2 * minorAxis / (circle1.radius * 2)) * 180 / PI;
+		printf("minorDiameter: %f, angle: %f \n", minorAxis, angle);
+	}
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -318,8 +378,38 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key) {
 	case 'd':
 		day = day + 1;
-		cout << day << endl;
 		glutPostRedisplay();
+		break;
+	case 'f':
+		year = year - 1;
+		glutPostRedisplay();
+		break;
+	case 'q':
+	{
+		
+		if (drawStatus == 1) {
+			Profile* newProfile = new Profile(translateY, circle1.radius);
+			translateY = translateY + 5;
+			if (profileList.GetHead() == NULL)
+			{
+				cout << "no head , create one " << endl;
+				Node* p = new Node(newProfile);
+				profileList.SetHead(p);
+			}
+			else
+			{
+				profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
+			}
+		}
+		cout << translateY << endl;
+		cout << profileList.GetNodeNumber() << endl;
+		glutPostRedisplay();
+
+		break;
+	}
+
+	case 27:
+		exit(0);
 		break;
 	}
 }
@@ -332,7 +422,7 @@ int main(int argc, char *argv[]) {
 	//指定RGB颜色模式和单缓冲窗口
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
 	//定义窗口的位置
-	glutInitWindowPosition(100, 100);
+	glutInitWindowPosition(500, 300);
 	//定义窗口的大小
 	glutInitWindowSize(600, 600);
 	//创建窗口，同时为之命名
@@ -351,3 +441,4 @@ int main(int argc, char *argv[]) {
 	//程序返回
 	return 0;
 }
+

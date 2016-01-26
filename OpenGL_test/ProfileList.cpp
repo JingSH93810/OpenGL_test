@@ -29,7 +29,7 @@ Node * ProfileList::Locate(int pos)
 	return p;
 }
 
-bool ProfileList::Insert(GLdouble * item, int pos)
+bool ProfileList::Insert(Profile* item, int pos)
 {
 	Node* p = Locate(pos);
 	if (NULL == p)
@@ -47,13 +47,13 @@ bool ProfileList::Insert(GLdouble * item, int pos)
 	return true;
 }
 
-GLdouble* ProfileList::GetData(int pos)
+Profile* ProfileList::GetData(int pos)
 {
 	Node* p = Locate(pos);
 	if (NULL == p)
 		return NULL;
 
-	return p->vertexArray;
+	return p->profile;
 }
 
 int ProfileList::GetNodeNumber()
@@ -63,4 +63,12 @@ int ProfileList::GetNodeNumber()
 
 ProfileList::~ProfileList()
 {
+	Node *p;
+	while( head != NULL)
+	{
+		p = head;
+		head = head->next;
+		delete(p);
+	}
+	nodeCount = 0;
 }
