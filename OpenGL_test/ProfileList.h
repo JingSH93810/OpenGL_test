@@ -1,8 +1,4 @@
 #pragma once
-#include <string.h>
-#include <math.h>
-#include <GL/glew.h>
-#include <GL/freeglut.h>
 #include <iostream>
 #include "Profile.h"
 using namespace std;

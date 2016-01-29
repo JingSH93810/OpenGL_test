@@ -5,45 +5,14 @@
 #include <iostream>
 #include "ProfileList.h"
 #include "Profile.h"
+#include "Draw.h"
 using namespace std;
 
-#define PI 3.1415926
-/* 每个图形最多的顶点数 */
-#define MAX_VERTEX 10
-/* 画的图形最多的个数 */
-#define MAX_PLOY 10
+
 /* 窗口长宽的一半 */
 int halfWidth, halfHeight;
 /* 绘制多边形的起始标志，0是开始绘制，1是结束绘制，初始为-1 */
 int drawStatus = -1;
-/* 多边形结构体 */
-struct polygon {
-	/* 顶点坐标 */
-	int x[MAX_VERTEX];
-	int y[MAX_VERTEX];
-	/* 定义第几个顶点 */
-	int verNum;
-	GLubyte color[3];
-};
-int radius_X[2];
-int radius_Y[2];
-int circle_count = 0;
-
-int minorX = 0;
-int minorY = 0;
-double angle = 0;
-struct circle
-{
-	/*圆心坐标*/
-	double x;
-	double y;
-	/*圆半径*/
-	double radius;
-	double angle;
-	GLubyte color[3];
-};
-circle circle1;
-
 
 /* 各种颜色 */
 GLubyte border[3] = { 0, 0, 0 };
@@ -56,150 +25,28 @@ GLubyte startBtn[3] = { 10, 10, 10 };
 GLubyte endBtn[3] = { 20, 20, 20 };
 /* 当前颜色 */
 GLubyte nowColor[3] = { 0, 0, 0 };
-/* 声明多边形数组 */
-polygon polygons[MAX_PLOY];
-/* 记录画了几个多边形 */
-int con = 0;
-int day = 0;
-int year = 0;
 
 
-static ProfileList profileList;
-static GLdouble translateY = 0;
-static int profileNumber = 0;
+ProfileList profileList;
+GLdouble translateY = 0;
+GLdouble offset = -20;
+GLdouble geoCenter_X = 0;
+GLdouble geoCenter_Y = 0;
+GLdouble geoRotation = 0;
+GLdouble profileRadius = 0;
+GLdouble radius_X[2];
+GLdouble radius_Y[2];
+int clickCount = 0;
+/*用户指定旋转角度*/
+GLdouble angle = 0;
+GLdouble normal[3] = {0.0, 0.0, 0.0};
 
-double calculateRadius(int x1, int y1, int x2, int y2) {
-	double radius = (sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2)) / 2.0);
-	return radius;
-}
+double bottle[] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.61};
+int m = 19;
 
-double calculateDistance(int x1, int y1, int x2, int y2) {
-	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-}
-
-double calculateDistance(int x1, int y1, int x2, int y2, int x0, int y0) {
-	double A = y2 - y1;
-	double B = x1 - x2;
-	double C = x2*y1 - x1*y2;
-	double numerator = abs((y2 - y1)*x0 + (x1 - x2)*y0 + C);
-	double denominator = sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-	return numerator / denominator;
-}
-
-double calculateAngle(int x1, int y1, int x2, int y2) {
-	double angle = atan2(y2 - y1, x2 - x1) * 180.0 / PI;
-	return angle;
-}
-
-//画弧线，相对偏移量XY，开始的弧度，结束的弧度，半径
-void glArc(double x, double y, double start_angle, double end_angle, double radius)
-{
-	//开始绘制曲线
-	glBegin(GL_LINE_STRIP);
-	//每次画增加的弧度
-	double delta_angle = PI / 180;
-	//画圆弧
-	for (double i = start_angle; i <= end_angle; i += delta_angle)
-	{
-		//绝对定位加三角函数值
-		double vx = x + radius * cos(i);
-		double vy = y + radius*sin(i);
-		glVertex2d(vx, vy);
-	}
-	//结束绘画
-	glEnd();
-}
+GLdouble length = 0;
 
 
-//画圆
-void glCircle(double x, double y, double radius)
-{
-	//画全圆
-	glArc(x, y, 0, 2 * PI, radius);
-}
-
-/* 绘制多边形 */
-void glPolygons()
-{
-	if (con >= 0) {
-		for (int i = 0; i <= con; i++) {
-			/* 取到这个多边形 */
-			polygon poly = polygons[i];
-			/* 画封闭线 */
-			glBegin(GL_LINE_LOOP);
-			int num = poly.verNum;
-			printf("num:%d\n", num);
-			for (int j = 0; j < num; j++)
-			{
-				glColor3ub(poly.color[0], poly.color[1], poly.color[2]);
-				glVertex2d(poly.x[j] - halfWidth, halfHeight - poly.y[j]);
-				printf("polyx:%d,polyy:%d", poly.x[j], poly.y[j]);
-			}
-			/* 结束画线 */
-			glEnd();
-			/* 刷新 */
-			glFlush();
-		}
-	}
-}
-
-/* 绘制填充的圆形 */
-void glColorCircle(int x, int y, int R, GLubyte color[3])
-{
-	/* 开始绘制曲线 */
-	glBegin(GL_POLYGON);
-	/* 设置颜色 */
-	glColor3ub(color[0], color[1], color[2]);
-	/* 每次画增加的弧度 */
-	double delta_angle = PI / 180;
-	/* 画圆弧 */
-	for (double i = 0; i <= 2 * PI; i += delta_angle)
-	{
-		/* 绝对定位加三角函数值 */
-		double	vx = x + R * cos(i);
-		double	vy = y + R*sin(i);
-		glVertex2d(vx, vy);
-	}
-	/* 结束绘画 */
-	glEnd();
-	glFlush();
-}
-
-//画线，传入两点坐标
-void glLine(int x1, int y1, int x2, int y2) {
-	//画封闭线
-	glBegin(GL_LINE_STRIP);
-	//一点
-	glVertex2d(x1, y1);
-	//二点
-	glVertex2d(x2, y2);
-	//结束画线
-	glEnd();
-}
-
-/* 画点 */
-void glPoints(int x, int y) {
-	glBegin(GL_POINTS);
-	/* 点直接设置为黑色 */
-	glColor3ub(0, 0, 0);
-	glPointSize(100);
-	glVertex2d(x, y);
-	glEnd();
-	glFlush();
-}
-
-void generateSurface(GLdouble* circle1, GLdouble* circle2) {
-
-	glColor3f(0.0, 0.0, 0.0);
-	for (int k = 0; k < 150; k += 3)
-	{
-		glVertex3d(circle1[k], circle1[k + 1], circle1[k + 2]);
-		glVertex3d(circle2[k], circle2[k + 1], circle2[k + 2]);
-	}
-	glVertex3d(circle1[0], circle1[1], circle1[2]);
-	glVertex3d(circle2[0], circle2[1], circle2[2]);
-
-}
 //函数用来画图
 void display(void)
 {
@@ -215,7 +62,7 @@ void display(void)
 	glColorCircle(250, 280, 10, startBtn);
 	glColorCircle(280, 280, 10, endBtn);
 
-	for (int i = 0; i < circle_count; i++)
+	for (int i = 0; i < clickCount; i++)
 	{
 		glColorCircle(radius_X[i], radius_Y[i], 5, red);
 	}
@@ -229,17 +76,19 @@ void display(void)
 		glColorCircle(radius_X[0], radius_Y[0], 5, red);
 		glColorCircle(radius_X[1], radius_Y[1], 5, red);
 		glLine(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
-		glTranslated(circle1.x, circle1.y, 0.0);
-		glRotated(circle1.angle, 0, 0, 1);
+		glTranslated(geoCenter_X, geoCenter_Y, 0.0);
+		glRotated(geoRotation, 0, 0, 1);
 		glRotated(angle, 1, 0, 0);
-		glColor3b(0, 0, 0);
-		glCircle(0, 0, circle1.radius);
+		glColor3d(1,0,0);
 		Node* p = profileList.GetHead();
+		if (p != NULL) p->profile->draw();
 		while (p != NULL && p->next != NULL)
 		{
-			p->profile->draw();
+			glColor3b(0, 0, 0);
 			p->profile->triangularize(p->next->profile);
 			p = p->next;
+			glColor3d(1, 0, 0);
+			p->profile->draw();
 		}
 		glPopMatrix();
 
@@ -279,17 +128,7 @@ void ChangeSize(GLsizei w, GLsizei h)
 	glMatrixMode(GL_MODELVIEW);
 
 }
-/* 判断两个颜色是否相等 */
-bool sameColor(GLubyte color1[3], GLubyte color2[3])
-{
-	if (color1[0] - color2[0] < 5 && color1[1] - color2[1] < 5 && color1[2] - color2[1] < 5)
-	{
-		return(true);
-	}
-	else {
-		return(false);
-	}
-}
+
 
 
 
@@ -318,29 +157,38 @@ void mouseClick(int btn, int state, int x, int y)
 			/* 如果点击了开始绘制的按钮 */
 			if (sameColor(color, startBtn)) {
 				drawStatus = 0;
-				/* 开始画一个图形，顶点个数置零 */
-				polygons[con].verNum = 0;
 				printf("drawStatus:%d\n", drawStatus);
 				/* 如果点击了结束绘制的按钮 */
 			}
 			else if (sameColor(color, endBtn)) {
-				if (circle_count == 2) drawStatus = 1;
-				circle_count = 0;
-				day = 0;
-				printf("x1:%d, y1:%d, x2:%d, y2:%d\n", radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
+				if (clickCount == 2) {
+					drawStatus = 1;
+					printf("drawStatus:%d\n", drawStatus);
+					clickCount = 0;
+					printf("x1:%d, y1:%d, x2:%d, y2:%d\n", radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
 
-				circle1.x = (radius_X[1] + radius_X[0]) / 2.0;
-				printf("origin x:%f\n", circle1.x);
-				circle1.y = (radius_Y[1] + radius_Y[0]) / 2.0;
-				printf("origin y:%f\n", circle1.y);
-				circle1.radius = calculateRadius(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
-				printf("radius:%f\n", circle1.radius);
-				circle1.angle = calculateAngle(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
-				printf("angle a:%f\n", circle1.angle);
+					geoCenter_X = (radius_X[1] + radius_X[0]) / 2.0;
+					printf("origin x:%f\n", geoCenter_X);
+					geoCenter_Y = (radius_Y[1] + radius_Y[0]) / 2.0;
+					printf("origin y:%f\n", geoCenter_Y);
+					profileRadius = calculateRadius(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
+					printf("radius:%f\n", profileRadius);
+					geoRotation = calculateAngle(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1]);
+					printf("angle a:%f\n", geoRotation);
 
-				/* 画的图形个数加一 */
-				con++;
-				printf("drawStatus:%d\n", drawStatus);
+					Profile* newProfile = new Profile(translateY, profileRadius);
+					translateY = translateY + offset;
+					if (profileList.GetHead() == NULL)
+					{
+						cout << "no head , create one " << endl;
+						Node* p = new Node(newProfile);
+						profileList.SetHead(p);
+					}
+
+
+				}
+
+
 			}
 			/* 如果点击的是下方的绘图页面 */
 		}
@@ -350,17 +198,33 @@ void mouseClick(int btn, int state, int x, int y)
 			{
 				translateY = 0;
 				profileList.~ProfileList();
-				if (circle_count == 2) {
-					circle_count = 0;
+				if (clickCount == 2) {
+					clickCount = 0;
 				}
-				if (circle_count < 2) {
-					radius_X[circle_count] = x - halfWidth;
-					radius_Y[circle_count] = halfHeight - y;
-					glColorCircle(radius_X[circle_count], radius_Y[circle_count], 5, red);
-					circle_count++;
+				if (clickCount < 2) {
+					radius_X[clickCount] = x - halfWidth;
+					radius_Y[clickCount] = halfHeight - y;
+					glColorCircle(radius_X[clickCount], radius_Y[clickCount], 5, red);
+					clickCount++;
 				}
 
 
+			}
+
+			if (drawStatus == 1 && clickCount == 0) {
+				cout << " !!!! " << endl;
+				int click_X = x - halfWidth;
+				int click_Y = halfHeight - y;
+				length = calculateDistance(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1], click_X, click_Y);
+				cout << length << endl;
+				double transCount = -length / offset;
+				cout << transCount << endl;
+				for (int i = 0; i < transCount; i++)
+				{
+					Profile* newProfile = new Profile(translateY, profileRadius);
+					translateY = translateY + offset;
+					profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
+				}
 			}
 		}
 	}
@@ -368,7 +232,9 @@ void mouseClick(int btn, int state, int x, int y)
 		int click_X = x - halfWidth;
 		int click_Y = halfHeight - y;
 		double minorAxis = calculateDistance(radius_X[0], radius_Y[0], radius_X[1], radius_Y[1], click_X, click_Y);
-		angle = acos(2 * minorAxis / (circle1.radius * 2)) * 180 / PI;
+		angle = acos(2 * minorAxis / (profileRadius * 2)) * 180 / PI;
+		normal[1] = cos(angle);
+		normal[2] = sin(angle);
 		printf("minorDiameter: %f, angle: %f \n", minorAxis, angle);
 	}
 }
@@ -376,36 +242,31 @@ void mouseClick(int btn, int state, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 'd':
-		day = day + 1;
-		glutPostRedisplay();
-		break;
-	case 'f':
-		year = year - 1;
-		glutPostRedisplay();
-		break;
 	case 'q':
 	{
 		
 		if (drawStatus == 1) {
-			Profile* newProfile = new Profile(translateY, circle1.radius);
-			translateY = translateY + 5;
-			if (profileList.GetHead() == NULL)
-			{
-				cout << "no head , create one " << endl;
-				Node* p = new Node(newProfile);
-				profileList.SetHead(p);
-			}
-			else
-			{
-				profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
-			}
+			Profile* newProfile = new Profile(translateY, profileRadius);
+			translateY = translateY + offset;
+			profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
 		}
 		cout << translateY << endl;
 		cout << profileList.GetNodeNumber() << endl;
 		glutPostRedisplay();
-
 		break;
+		
+		/*
+		if (drawStatus == 1) {
+			for (int i = 0; i < m; i++)
+			{
+				Profile* newProfile = new Profile(translateY, profileRadius*bottle[i]);
+				translateY = translateY + offset;
+				profileList.Insert(newProfile, profileList.GetNodeNumber() - 1);
+			}
+			
+		}
+		glutPostRedisplay();
+		break;*/
 	}
 
 	case 27:

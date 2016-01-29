@@ -1,10 +1,11 @@
 #pragma once
-#include <string.h>
 #include <math.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <iostream>
-using namespace std;
+#include "Triangle.h"
+
+
+
 class Profile
 {
 public:
@@ -12,7 +13,7 @@ public:
 	Profile(GLdouble* x, GLdouble* y, GLdouble* z);
 	Profile(double z_offset, double radius);
 	~Profile();
-	static const int MAX_VERTICES_NUM = 360;
+	static const int MAX_VERTICES_NUM = 50;
 	void setPosVal(GLdouble x, GLdouble y, GLdouble z, int vertices);
 	void triangularize(Profile* p2);
 	GLdouble* getPosVal(int vertices);
@@ -23,5 +24,6 @@ private:
 	GLdouble* posX;
 	GLdouble* posY;
 	GLdouble* posZ;
+	Triangle* triangles;
 };
 
